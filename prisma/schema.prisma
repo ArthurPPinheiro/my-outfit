@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  username      String         @unique
+  passwordHash  String         @map("password_hash")
+  fullName      String?        @map("full_name")
+  avatarUrl     String?        @map("avatar_url")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  clothingItems ClothingItem[]
+  outfits       Outfit[]
+
+  @@map("users")
+}
+
+model ClothingItem {
+  id            String       @id @default(uuid())
+  userId        String       @map("user_id")
+  name          String
+  category      Category
+  subcategory   String?
+  brand         String?
+  color         String?
+  colors        String[]
+  size          String?
+  season        Season?
+  material      String?
+  purchaseDate  DateTime?    @map("purchase_date") @db.Date
+  purchasePrice Decimal?     @map("purchase_price") @db.Decimal(10, 2)
+  imageUrl      String       @map("image_url")
+  thumbnailUrl  String?      @map("thumbnail_url")
+  description   String?      @db.Text
+  tags          String[]
+  isFavorite    Boolean      @default(false) @map("is_favorite")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outfitItems   OutfitItem[]
+
+  @@index([userId])
+  @@index([category])
+  @@index([season])
+  @@map("clothing_items")
+}
+
+model Outfit {
+  id           String       @id @default(uuid())
+  userId       String       @map("user_id")
+  name         String
+  description  String?      @db.Text
+  imageUrl     String?      @map("image_url")
+  season       Season?
+  isFavorite   Boolean      @default(false) @map("is_favorite")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outfitItems  OutfitItem[]
+
+  @@index([userId])
+  @@index([season])
+  @@map("outfits")
+}
+
+model OutfitItem {
+  id             String   @id @default(uuid())
+  outfitId       String   @map("outfit_id")
+  clothingItemId String   @map("clothing_item_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  outfit Outfit @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+
+  clothingItem ClothingItem @relation(fields: [clothingItemId], references: [id], onDelete: Cascade)
+
+  @@unique([outfitId, clothingItemId])
+  @@index([outfitId])
+  @@index([clothingItemId])
+  @@map("outfit_items")
+}
+
+enum Category {
+  Shirts
+  Hoodies
+  Caps
+  Accessories
+  Shoes
+  Pants
+  Jackets
+  Shorts
+}
+
+enum Season {
+  Spring
+  Summer
+  Fall
+  Winter
+  AllSeason @map("All-Season")
+}
