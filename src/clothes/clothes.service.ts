@@ -1,26 +1,106 @@
-import { Injectable } from '@nestjs/common';
-import { CreateClotheDto } from './dto/create-clothe.dto';
-import { UpdateClotheDto } from './dto/update-clothe.dto';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { CreateClothingDto } from './dto/create-clothing.dto';
+import { UpdateClothingDto } from './dto/update-clothing.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { Category, Season } from '@prisma/client';
+import { use } from 'passport';
+import { connect } from 'http2';
 
 @Injectable()
 export class ClothesService {
-  create(createClotheDto: CreateClotheDto) {
-    return 'This action adds a new clothe';
+  constructor(private prisma: PrismaService) {}
+
+  async create(data: CreateClothingDto) {
+    console.log(data);
+    try {
+      return await this.prisma.clothingItem.create({
+        data: {
+          user: { connect: { id: data.userId } },
+          name: data.name,
+          category: data.category as Category,
+          subcategory: data.subcategory,
+          brand: data.brand,
+          color: data.color,
+          colors: { set: data.colors },
+          size: data.size,
+          season: data.season as Season,
+          material: data.material,
+          purchaseDate: data.purchaseDate,
+          purchasePrice: data.purchasePrice,
+          imageUrl: data.imageUrl,
+          thumbnailUrl: data.thumbnailUrl,
+          description: data.description,
+          tags: { set: data.tags },
+          isFavorite: data.isFavorite,
+        },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
   }
 
-  findAll() {
-    return `This action returns all clothes`;
+  async findAll() {
+    return await this.prisma.clothingItem.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} clothe`;
+  async findOne(id: string) {
+    try{
+      const clothing = await this.prisma.clothingItem.findUnique({
+        where: { id: id },
+      });
+
+      if(!clothing){
+        throw new NotFoundException("Clothing item not found");
+      }
+      
+      return clothing;
+    } catch(error){
+      throw new NotFoundException(error.message);
+    }
   }
 
-  update(id: number, updateClotheDto: UpdateClotheDto) {
-    return `This action updates a #${id} clothe`;
+  async findByUserId(userId: string) {
+    try{
+      return await this.prisma.clothingItem.findMany({
+        where: { userId: userId },
+      });
+    } catch(error){
+      throw new InternalServerErrorException(error.message);
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} clothe`;
+  async update(id: string, data: UpdateClothingDto) {
+    try{
+      const formattedData = {
+        ...data,
+        userId: data.userId,
+        category: data.category as Category,
+        season: data.season as Season,
+      }
+
+      return await this.prisma.clothingItem.update({
+        where: { id: id },
+        data: {
+          ...formattedData,
+          updatedAt: new Date()
+        },
+      });
+    } catch(error){
+      if (error.code === 'P2025') {
+        throw new NotFoundException("Clothing item not found");
+      }
+
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  remove(id: string) {
+    try{
+      return this.prisma.clothingItem.delete({
+        where: { id: id },
+      });
+    } catch(error){
+      throw new InternalServerErrorException(error.message);
+    }
   }
 }

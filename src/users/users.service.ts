@@ -47,7 +47,7 @@ export class UsersService {
 
       return user;
     } catch (error) {
-      throw new NotFoundException("User not found");
+      throw new InternalServerErrorException(error.message);
     }
   }
 

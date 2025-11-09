@@ -1,6 +1,5 @@
-export class Clothing {
-    id: number;
-    userId: number;
+export class CreateClothingDto {
+    userId: string;
     name: string
     category: string;
     subcategory?: string;
