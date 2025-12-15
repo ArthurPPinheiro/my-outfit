@@ -11,7 +11,6 @@ export class ClothesService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: CreateClothingDto) {
-    console.log(data);
     try {
       return await this.prisma.clothingItem.create({
         data: {
@@ -94,9 +93,9 @@ export class ClothesService {
     }
   }
 
-  remove(id: string) {
+  async remove(id: string) {
     try{
-      return this.prisma.clothingItem.delete({
+      return await this.prisma.clothingItem.delete({
         where: { id: id },
       });
     } catch(error){
